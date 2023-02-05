@@ -50,3 +50,11 @@ services:
       - ./bookApp:/code
     depends_on:
       - keycloak
+
+  nginx:
+    restart: always
+    build: ./nginx
+    ports:
+      - "81:80"
+    depends_on:
+      - book-app
