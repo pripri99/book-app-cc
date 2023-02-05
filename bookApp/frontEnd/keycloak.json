@@ -1,8 +1,8 @@
 {
-  "realm": "CAMPAIGN_REALM",
+  "realm": "CC_REALM",
   "auth-server-url": "http://localhost:8080/auth/",
   "ssl-required": "external",
-  "resource": "CAMPAIGN_CLIENT",
+  "resource": "CC_CLIENT",
   "verify-token-audience": true,
   "credentials": {
     "secret": "ba8d8925-b924-4302-8691-e93b5e51c885"
