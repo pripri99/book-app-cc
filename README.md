@@ -1,1 +1,3 @@
-make appup
+## CC Project
+
+run `make appup`
