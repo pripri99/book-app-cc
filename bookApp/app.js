@@ -4,10 +4,16 @@ const Express = require("express");
 const path = require("path");
 const hogan = require("hogan-express");
 const cookieParser = require("cookie-parser");
+const { Kafka } = require("kafkajs");
 
 const Permissions = require("./lib/permissions");
 const KeyCloakService = require("./lib/keyCloakService");
 const AdminClient = require("./lib/adminClient");
+
+const clienteKafka = new Kafka({
+  clientId: "book-app",
+  brokers: ["kafka:9092"], // url 'kafka' is the host and port is 9092
+});
 
 /**
  * URL patterns for permissions. URL patterns documentation https://github.com/snd/url-pattern.
@@ -19,16 +25,13 @@ const PERMISSIONS = new Permissions([
   ["/campaigns(*)", "get", "res:campaign", "scopes:view"],
   ["/reports", "post", "res:report", "scopes:create"],
   ["/reports(*)", "get", "res:report", "scopes:view"],
+  ["/send(*)", "get", "res:send", "scopes:view"],
 ]).notProtect(
   "/favicon.ico", // just to not log requests
   "/login(*)",
   "/accessDenied",
   "/adminClient",
   "/adminApi(*)",
-
-  /**
-   * It is protected because of we need an access token. Better to move it to the protected area.
-   */
   "/permissions",
   "/checkPermission"
 );
@@ -43,7 +46,7 @@ let keyCloak = new KeyCloakService(PERMISSIONS);
 
 let adminClient = new AdminClient({
   realm: "CAMPAIGN_REALM",
-  serverUrl: "http://localhost:8080",
+  serverUrl: "http://keycloak:8080",
   resource: "CAMPAIGN_CLIENT",
   adminLogin: "admin",
   adminPassword: "admin",
@@ -54,6 +57,7 @@ configureRoutes();
 
 const server = app.listen(3000, function () {
   const port = server.address().port;
+  console.log("address is %s", server.address());
   console.log("App listening at port %s", port);
 });
 
@@ -79,6 +83,7 @@ function configureRoutes() {
   app.use("/optimizer", showUrl);
   app.use("/reports", showUrl);
   app.use("/targets", showUrl);
+  // app.use("/send", showUrl);
 
   applicationRoutes();
 
@@ -90,6 +95,8 @@ function configureRoutes() {
 // this routes are used by this application
 function applicationRoutes() {
   app.get("/login", login);
+
+  app.get("/send", send);
 
   app.get("/adminClient", (req, res) =>
     renderAdminClient(res, "we will have result here")
@@ -131,6 +138,19 @@ function login(req, res) {
       console.error(error);
       res.end("Login error: " + error);
     });
+}
+
+async function send(req, res) {
+  const productor = clienteKafka.producer();
+  await productor.send({
+    topic: "topic-test-1", // topic name
+    messages: [{ value: "Hello KafkaJS user!" + Math.random().toString() }],
+  });
+
+  res.render("sendSuccess", {
+    resDetail: res,
+    reqDetail: req,
+  });
 }
 
 function renderAdminClient(res, result) {

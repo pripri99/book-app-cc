@@ -13,6 +13,7 @@
   "license": "Apache-2.0",
   "author": "Pripri99",
   "dependencies": {
+    "kafkajs": "1.16.0",
     "core-js": "^2.4.1",
     "express": "*",
     "hogan-express": "*",
