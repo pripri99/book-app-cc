@@ -44,9 +44,9 @@ app.engine("html", hogan);
 let keyCloak = new KeyCloakService(PERMISSIONS);
 
 let adminClient = new AdminClient({
-  realm: "CAMPAIGN_REALM",
+  realm: "CC_REALM",
   serverUrl: "http://localhost:8080",
-  resource: "CAMPAIGN_CLIENT",
+  resource: "CC_CLIENT",
   adminLogin: "admin",
   adminPassword: "admin",
 });
