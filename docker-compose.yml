@@ -69,6 +69,31 @@ services:
     networks:
       - backend
 
+  book-app:
+    build:
+      context: ./bookApp
+    container_name: book-app
+    restart: always
+    ports:
+      - 3000:3000
+    volumes:
+      - ./bookApp/frontEnd:/code
+    depends_on:
+      - keycloak
+    networks:
+      - backend
+
+  nginx:
+    restart: always
+    build: ./nginx
+    container_name: nginx
+    ports:
+      - "81:80"
+    depends_on:
+      - book-app
+    networks:
+      - backend
+
   keycloak:
     image: jboss/keycloak:14.0.0
     container_name: keycloak
