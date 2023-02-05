@@ -4,34 +4,33 @@ const Express = require("express");
 const path = require("path");
 const hogan = require("hogan-express");
 const cookieParser = require("cookie-parser");
-const { Kafka } = require("kafkajs");
+const { Kafka, getRandomID } = require("kafkajs");
+const { GestorDeTrabajos } = require("../GestorDeTrabajo/GestorDeTrabajos.js");
+const configuracion = require("./configuracion");
+const assert = require("assert");
 
 const Permissions = require("./lib/permissions");
 const KeyCloakService = require("./lib/keyCloakService");
 const AdminClient = require("./lib/adminClient");
 
 const clienteKafka = new Kafka({
-  clientId: "book-app",
-  brokers: ["kafka:9092"], // url 'kafka' is the host and port is 9092
+  brokers: configuracion.kafka.BROKERS,
+  clientId: configuracion.kafka.CLIENTID,
 });
+
+var gdt = new GestorDeTrabajos();
+assert(gdt);
+
+console.log(gdt);
 
 /**
  * URL patterns for permissions. URL patterns documentation https://github.com/snd/url-pattern.
  */
-const PERMISSIONS = new Permissions([
-  ["/customers", "post", "res:customer", "scopes:create"],
-  ["/customers(*)", "get", "res:customer", "scopes:view"],
-  ["/campaigns", "post", "res:campaign", "scopes:create"],
-  ["/campaigns(*)", "get", "res:campaign", "scopes:view"],
-  ["/reports", "post", "res:report", "scopes:create"],
-  ["/reports(*)", "get", "res:report", "scopes:view"],
-]).notProtect(
+const PERMISSIONS = new Permissions([]).notProtect(
   "/favicon.ico", // just to not log requests
   "/login(*)",
-  "/send(*)",
+  "/sendJob(*)",
   "/accessDenied",
-  "/adminClient",
-  "/adminApi(*)",
   "/permissions",
   "/checkPermission"
 );
@@ -46,7 +45,7 @@ let keyCloak = new KeyCloakService(PERMISSIONS);
 
 let adminClient = new AdminClient({
   realm: "CAMPAIGN_REALM",
-  serverUrl: "http://keycloak:8080",
+  serverUrl: "http://localhost:8080",
   resource: "CAMPAIGN_CLIENT",
   adminLogin: "admin",
   adminPassword: "admin",
@@ -76,15 +75,6 @@ function configureRoutes() {
   let router = Express.Router();
   app.use("/", router);
 
-  // example urls to check protection
-  app.use("/campaigns", showUrl);
-  app.use("/customers", showUrl);
-  app.use("/upload", showUrl);
-  app.use("/optimizer", showUrl);
-  app.use("/reports", showUrl);
-  app.use("/targets", showUrl);
-  // app.use("/send", showUrl);
-
   applicationRoutes();
 
   app.get("*", (req, res) =>
@@ -96,17 +86,8 @@ function configureRoutes() {
 function applicationRoutes() {
   app.get("/login", login);
 
-  app.get("/send", send);
-
-  app.get("/adminClient", (req, res) =>
-    renderAdminClient(res, "we will have result here")
-  );
-
-  app.get("/adminApi", (req, res) => {
-    let render = renderAdminClient.bind(null, res);
-    adminClient[req.query.api]().then(render).catch(render);
-  });
-
+  app.get("/sendJob", sendJob);
+  AdminClient;
   //get all permissions
   app.get("/permissions", (req, res) => {
     keyCloak
@@ -140,17 +121,77 @@ function login(req, res) {
     });
 }
 
-async function send(req, res) {
-  const productor = clienteKafka.producer();
-  await productor.send({
-    topic: "topic-test-1", // topic name
-    messages: [{ value: "Hello KafkaJS user!" + Math.random().toString() }],
+async function create_tema(tema) {
+  const administrador = clienteKafka.admin();
+  console.log("wait for admin");
+  await administrador.connect();
+
+  console.log("======================= ALL TEMAS ======================");
+
+  var temas = await administrador.listTopics();
+
+  if (temas.includes(tema)) {
+    console.log("tema already exist");
+    console.log(tema);
+    return;
+  }
+
+  console.log("create topic");
+  await administrador.createTopics({
+    topics: [{ topic: tema }],
   });
 
-  res.render("sendSuccess", {
-    resDetail: res,
-    reqDetail: req,
-  });
+  console.log(temas);
+
+  await administrador.disconnect();
+}
+
+async function sendJob(req, res) {
+  const productor = clienteKafka.producer();
+
+  try {
+    const tema = configuracion.kafka.TOPIC;
+    await create_tema(tema);
+    console.log("wait for producer");
+    await productor.connect();
+    var idTrabajo = getRandomJobID();
+    console.log(" ===================================== ");
+    console.log(" añandiendo trabajo: ", idTrabajo);
+    console.log(" ===================================== ");
+
+    var trabajoJson = {
+      idTrabajo: idTrabajo,
+      nombreTrabajo: "my new job",
+      parametros: "test test",
+    };
+    await productor.send({
+      topic: tema,
+      messages: [{ key: idTrabajo, value: JSON.stringify(trabajoJson) }],
+    });
+
+    // getting an error with the gestor the trabajo
+    //const answer = await gdt.nuevoTrabajo();
+
+    //const answer = await
+    gdt.getJobResponse();
+
+    res.render("sendSuccess", {
+      resDetail: answer.result,
+      reqDetail: answer.idTrabajo,
+    });
+
+    console.log(" mensaje enviado app.js !! ");
+
+    await productor.disconnect();
+  } catch (err) {
+    console.log("###### error node ###### " + err);
+  }
+}
+
+function getRandomJobID() {
+  let fecha = (Date.now() % 123456789).toString();
+  let sufijo = Math.floor(Math.random() * 900000) + 100000;
+  return fecha + "_" + sufijo;
 }
 
 function renderAdminClient(res, result) {

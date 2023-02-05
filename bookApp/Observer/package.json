@@ -1,0 +1,13 @@
+{
+  "name": "observer",
+  "version": "1.0.0",
+  "description": "log of Kafka",
+  "main": "observer.js",
+  "scripts": {
+    "start": "node observer.js"
+  },
+  "author": "Pripri99",
+  "dependencies": {
+    "kafkajs": "1.16.0"
+  }
+}

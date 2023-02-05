@@ -1,0 +1,13 @@
+{
+  "name": "gestor-de-trabajo",
+  "version": "1.0.0",
+  "description": "Management of jobs",
+  "main": "GestoDeTrabajos.js",
+  "scripts": {
+    "start": "node GestoDeTrabajos.js"
+  },
+  "author": "Pripri99",
+  "dependencies": {
+    "kafkajs": "1.16.0"
+  }
+}
