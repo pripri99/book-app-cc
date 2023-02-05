@@ -71,7 +71,7 @@ services:
 
   book-app:
     build:
-      context: ./bookApp
+      context: ./bookApp/frontEnd
     container_name: book-app
     restart: always
     ports:

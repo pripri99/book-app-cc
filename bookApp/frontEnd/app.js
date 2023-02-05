@@ -5,7 +5,7 @@ const path = require("path");
 const hogan = require("hogan-express");
 const cookieParser = require("cookie-parser");
 const { Kafka, getRandomID } = require("kafkajs");
-const { GestorDeTrabajos } = require("../GestorDeTrabajo/GestorDeTrabajos.js");
+const { GestorDeTrabajos } = require("./GestorDeTrabajo/GestorDeTrabajos.js");
 const configuracion = require("./configuracion");
 const assert = require("assert");
 
