@@ -25,17 +25,17 @@ const PERMISSIONS = new Permissions([
   ["/campaigns(*)", "get", "res:campaign", "scopes:view"],
   ["/reports", "post", "res:report", "scopes:create"],
   ["/reports(*)", "get", "res:report", "scopes:view"],
-  ["/send(*)", "get", "res:send", "scopes:view"],
 ]).notProtect(
   "/favicon.ico", // just to not log requests
   "/login(*)",
+  "/send(*)",
   "/accessDenied",
   "/adminClient",
   "/adminApi(*)",
   "/permissions",
   "/checkPermission"
 );
-
+///["/send(*)", "get", "res:send", "scopes:view"],
 let app = Express();
 
 // hogan-express configuration to render html
